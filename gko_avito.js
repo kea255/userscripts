@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.1
+// @version     1.2
 // @updateURL	https://00.gko73.ru/userscripts/gko_avito.js
 // @downloadURL	https://00.gko73.ru/userscripts/gko_avito.js
 // @author      -
@@ -47,14 +47,16 @@ GM_registerMenuCommand("01. Отправить в базу ГКО ЗУ", functio
 		html: document.documentElement.innerHTML,
 		url: window.location.origin+window.location.pathname,
 		name: document.querySelector('h1')?.textContent.trim(),
-		cena: document.querySelector('[itemprop="price"]').getAttribute('content'),
-		desc: document.querySelector('[itemprop="description"]').textContent.trim(),
-		adr: document.querySelector('[itemprop="address"]')?.textContent.replace('р-н ',', р-н ').trim()
+		cena: document.querySelector('[itemprop="price"]')?.getAttribute('content') || 0,
+		desc: document.querySelector('[itemprop="description"]')?.innerText.trim() || '',
+		adr: document.querySelector('[itemprop="address"]')?.textContent.replace('р-н ',', р-н ').trim() || ''
 	};
 	data.id = data.url.match(/_(\d+)(?:$|\?)/)?.[1] ?? Math.abs(parseInt(data.url.split('/').pop().replace(/[^0-9+-]/g, ''), 10) || 0);
 	if(data.id==0) data.id = new URLSearchParams(window.location.search).get('id');
-	const matches = [...data.desc.matchAll(/(73:\d{2}:\d{6,7}:\d{1,5})/g)];
-	if(matches.length > 0) data.kn = matches.map(m => m[1]).join(',');
+	if(data.desc){
+		let matches = [...data.desc.matchAll(/(73:\d{2}:\d{6,7}:\d{1,5})/g)];
+		if(matches.length > 0) data.kn = matches.map(m => m[1]).join(',');3
+	}
 	
 	document.querySelectorAll('ul[class^=params-paramsList] li, ul[class^=style-item-params] li, #bx_item-params li').forEach(el => {
 		let pkey = el.querySelector('span')?.textContent.trim();
@@ -77,20 +79,10 @@ GM_registerMenuCommand("01. Отправить в базу ГКО ЗУ", functio
 	document.documentElement.innerHTML.match(/data-map-lon="([\d.]+)/)?.[1] && (data.map_lon = RegExp.$1);
 	
     const popup = window.open('', '_blank', 'width=1280,height=900,scrollbars=yes,resizable=yes');
-    if(!popup){ console.error('Попап заблокирован!'); return; }
+    if(!popup){ alert('Попап заблокирован!'); return; }
     const doc = popup.document;
-    doc.write('<html><head><title>Отправка...</title></head><body>');
-    const form = doc.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://00.gko73.ru/ocenka_zu2025/page_import_oa_av.php';
-    form.style.display = 'none';
-    for(const key in data) {
-        const input = doc.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = data[key];
-        form.appendChild(input);
-    }
+    const form = Object.assign(doc.createElement('form'), {method: 'POST', action: 'https://00.gko73.ru/gko_zu2025/page_import_oa_av.php'});
+    Object.entries(data).forEach(([key, value]) => form.appendChild(Object.assign(doc.createElement('input'), {type: 'hidden', name: key, value})));
     doc.body.appendChild(form);
-    setTimeout(()=> form.submit(), 1000);
+    form.submit();
 });
