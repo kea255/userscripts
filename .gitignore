@@ -1,0 +1,7 @@
+*.zip
+*.xml
+*.xls
+*.txt
+*.sig
+*.sh
+!.gitignore

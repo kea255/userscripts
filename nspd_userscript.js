@@ -221,4 +221,16 @@ async function changeInput(inputElement, val){
   }catch(e){return sleep(100);}
 }
 
+async function changeSelectbox(inputElement, val){
+  try{
+    inputElement.click();
+	await sleep(200);
+	
+	let li = document.querySelectorAll('#nspd-combobox\\=container li');
+	for(el of li){ if(el.textContent.trim() == val){ el.click(); return; }}
+	await sleep(100);
+	return sleep(500);
+  }catch(e){return sleep(100);}
+}
+
 function sleep(ms){return new Promise(resolve => setTimeout(resolve, ms));}
