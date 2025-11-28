@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.2
+// @version     1.3
 // @updateURL	https://00.gko73.ru/userscripts/gko_avito.js
 // @downloadURL	https://00.gko73.ru/userscripts/gko_avito.js
 // @author      -
@@ -39,11 +39,74 @@ if(window.location.href.indexOf('/prodam')>=0 || window.location.href.indexOf('/
         observer.disconnect();
       }
   });
-  observer.observe(document.querySelector('[class^=items-items]'), {childList: true, subtree: true, characterData: true});
+  let sel = document.querySelector('[class^=items-items]');
+  if(sel) observer.observe(sel, {childList: true, subtree: true, characterData: true});
 }
 
 GM_registerMenuCommand("01. Отправить в базу ГКО ЗУ", function(event) {
-    let data = { 
+	let data = get_avito_data();
+	
+	open_popup('https://00.gko73.ru/gko_zu2025/page_import_oa_av.php', data);
+});
+
+GM_registerMenuCommand("02. Отправить в базу ГКО ОКС - Продажа", function(event) {
+	let data = get_avito_data();
+	
+	const extractNum = (str, def = 1) => parseInt(str.replace(/[^0-9]/g, '')) || def;
+	const toLower = s => s.toLowerCase();
+
+	const roomFields = ['Комнат в квартире', 'Количество комнат'];
+	for(const field of roomFields) {
+	  if(data[field]) { data.komnat = extractNum(data[field], 1); break; }
+	}
+	if(data['Этаж']) {
+	  const m = data['Этаж'].match(/(\d*)[^\d]*(\d*)/);
+	  if(m){ data.etaj = m[1]; data.etajey = m[2] || '0'; } else data.etaj = extractNum(data['Этаж']);
+	}
+	if(data['Тип дома']) data.tip_doma = toLower(data['Тип дома']);
+	if(data['Отделка']) {
+	  data.otdelka = toLower(data['Отделка']);
+	  data.otdelka = ['офисная', 'чистовая'].includes(data.otdelka) ? 'простая' : 'без отделки';
+	}
+	if(data['Ремонт']) {
+	  const r = toLower(data['Ремонт']);
+	  data.remont = r;
+	  if(['дизайнерский', 'евро'].includes(r)) data.otdelka = 'высококачественная';
+	  if(['косметический', 'требует ремонта'].includes(r)) data.otdelka = 'простая';
+	}
+	if(data['Материал стен']) data.material_sten = toLower(data['Материал стен']);
+	if(data['Год постройки']) data.god_postroyki = extractNum(data['Год постройки']);
+	
+	open_popup('https://00.gko73.ru/gko_oks2023/page_import_oa_av.php', data);
+});
+
+GM_registerMenuCommand("03. Отправить в базу ГКО ОКС - Аренда", function(event) {
+	let data = get_avito_data();
+	
+	if(document.querySelector('[class*="price-value-additional"]')?.textContent.indexOf('за м²')>0){
+		data.cena_u = data.cena;
+		data.cena = -1;
+	}
+	
+	if(data.ploshad>0 && data.cena>0) data.cena_u = data.cena/data.ploshad;
+	else
+	if(data.ploshad>0 && data.cena_u>0) data.cena = data.cena_u*data.ploshad;
+	
+	open_popup('https://00.gko73.ru/gko_oks2023/page_import_oa_av_rent.php', data);
+});
+
+function open_popup(url, data){
+    const popup = window.open('', '_blank', 'width=1280,height=900,scrollbars=yes,resizable=yes');
+    if(!popup){ alert('Попап заблокирован!'); return; }
+    const doc = popup.document;
+    const form = Object.assign(doc.createElement('form'), {method: 'POST', action: url});
+    Object.entries(data).forEach(([key, value]) => form.appendChild(Object.assign(doc.createElement('input'), {type: 'hidden', name: key, value})));
+    doc.body.appendChild(form);
+    form.submit();
+}
+
+function get_avito_data(){
+	let data = { 
 		html: document.documentElement.innerHTML,
 		url: window.location.origin+window.location.pathname,
 		name: document.querySelector('h1')?.textContent.trim(),
@@ -68,21 +131,15 @@ GM_registerMenuCommand("01. Отправить в базу ГКО ЗУ", functio
 		data[pkey] = pval;
 	});
 
+	document.documentElement.innerHTML.match(/data-map-lat="([\d.]+)/)?.[1] && (data.map_lat = RegExp.$1);
+	document.documentElement.innerHTML.match(/data-map-lon="([\d.]+)/)?.[1] && (data.map_lon = RegExp.$1);
+
 	const fields = ['Площадь дома', 'Площадь комнаты', 'Общая площадь', 'Площадь'];
 	let ploshad = fields.find(f => data[f]) || '';
 	if(ploshad){
 		ploshad = data[ploshad];
 		data.ploshad = ploshad.includes('сот') ? parseFloat(ploshad) * 100 : parseFloat(ploshad);
 	}
-
-	document.documentElement.innerHTML.match(/data-map-lat="([\d.]+)/)?.[1] && (data.map_lat = RegExp.$1);
-	document.documentElement.innerHTML.match(/data-map-lon="([\d.]+)/)?.[1] && (data.map_lon = RegExp.$1);
 	
-    const popup = window.open('', '_blank', 'width=1280,height=900,scrollbars=yes,resizable=yes');
-    if(!popup){ alert('Попап заблокирован!'); return; }
-    const doc = popup.document;
-    const form = Object.assign(doc.createElement('form'), {method: 'POST', action: 'https://00.gko73.ru/gko_zu2025/page_import_oa_av.php'});
-    Object.entries(data).forEach(([key, value]) => form.appendChild(Object.assign(doc.createElement('input'), {type: 'hidden', name: key, value})));
-    doc.body.appendChild(form);
-    form.submit();
-});
+	return data;
+}

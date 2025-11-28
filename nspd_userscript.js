@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.2
+// @version     1.3
 // @updateURL	https://00.gko73.ru/userscripts/nspd_userscript.js
 // @downloadURL	https://00.gko73.ru/userscripts/nspd_userscript.js
 // @author      -
@@ -24,23 +24,32 @@ if(window.location.href.indexOf('registryId=42472')>=0){
     const observer = new MutationObserver((mutationsList) => {
       if(document.querySelector('.App .nspd-spinner')) return;
       if(document.querySelector('.App table')){
-        observer.disconnect(); resolve();
+        observer.disconnect(); resolve('table');
       }
+	  if(document.querySelector('h3')?.textContent == 'Требуется авторизация'){
+		observer.disconnect(); resolve('auth');  
+	  }
     });
     observer.observe(document.querySelector('body'), {childList: true, subtree: true, characterData: true});
-  }).then(() => {
-    console.log('Таблица загружена');
-
-    //подсветить новые перечни
-    document.querySelectorAll('.App table>tbody>tr').forEach(row => {
-      const cell = row.querySelector('td:nth-child(10)');
-      if (cell && cell.textContent.trim() == 'Перечень ОН разобран') {
-        row.style.background='#fffed7';
-      }
-      if (cell && cell.textContent.trim() == 'Перечень ОН утвержден') {
-        row.style.background='#edfded';
-      }
-    });
+  }).then((res) => {
+	console.log(res);
+	if(res=='table'){
+		//подсветить новые перечни
+		document.querySelectorAll('.App table>tbody>tr').forEach(row => {
+		  const cell = row.querySelector('td:nth-child(10)');
+		  if (cell && cell.textContent.trim() == 'Перечень ОН разобран') {
+			row.style.background='#fffed7';
+		  }
+		  if (cell && cell.textContent.trim() == 'Перечень ОН утвержден') {
+			row.style.background='#edfded';
+		  }
+		});
+	}else
+	if(res=='auth'){
+		document.querySelectorAll('button').forEach(cell => { 
+			if(cell.textContent.trim() == 'Войти') cell.click(); 
+		});
+	}
   });
 }
 
