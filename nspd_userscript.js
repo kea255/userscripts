@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        m255 from nspd.gov.ru
 // @namespace   Violentmonkey Scripts
-// @match       https://nspd.gov.ru/*
+// @match       https://*nspd.gov.ru/*
 // @grant GM_registerMenuCommand
 // @grant GM_notification
 // @grant GM_download
@@ -65,6 +65,15 @@ if(window.location.href.indexOf('/tech-process/')>=0){
   }).then(() => {
     console.log('Приложение загружено');
   });
+}
+
+if(window.location.href.indexOf('sso.nspd.gov.ru/esia/callback')>=0){
+	document.querySelectorAll('.accountInfo').forEach(cell => { 
+		if(cell.textContent.trim() == 'ОГБУ "БТИГКО"'){
+			setTimeout(()=>{cell.click();}, 500) 
+			return;
+		}
+	});
 }
 
 if(window.location.href.endsWith('/profile')){
