@@ -252,9 +252,24 @@ async function changeInput(inputElement, val){
 	return sleep(500);
 }
 
+async function changeSelectbox(inputElement, val){
+  try{
+    inputElement.click();
+	await sleep(200);
+	
+	let li = document.querySelectorAll('#nspd-combobox\\=container li');
+	for(el of li){ if(el.textContent.trim() == val){ el.click(); return; }}
+	await sleep(100);
+	return sleep(500);
+  }catch(e){return sleep(100);}
+}
+
 async function customPrompt(message) {
     return new Promise((resolve) => {
         const dialogue = document.createElement('dialog');
+		
+		const msg = document.createElement('div');
+        msg.innerHTML = message;
 
         const input = document.createElement('textArea');
         input.id = 'promptInput';
@@ -266,7 +281,8 @@ async function customPrompt(message) {
 
         const cancelButton = document.createElement('button');
         cancelButton.textContent = 'Cancel';
-
+		
+		dialogue.appendChild(msg);
         dialogue.appendChild(input);
 		dialogue.appendChild(document.createElement('br'));
         dialogue.appendChild(submitButton);
@@ -275,6 +291,7 @@ async function customPrompt(message) {
         let result;
         submitButton.addEventListener('click', () => { result = input.value; dialogue.close(); });
         cancelButton.addEventListener('click', () => { result = null; dialogue.close(); });
+		dialogue.addEventListener('click', (event)=>{if(event.target===dialogue){dialogue.close();}});
         dialogue.addEventListener('close', () => { resolve(result??null); dialogue.remove(); });
 		
 		document.body.appendChild(dialogue);
@@ -282,6 +299,17 @@ async function customPrompt(message) {
     });
 }
 //let kns = await customPrompt(); console.log(kns);
+
+function customAlert(message) {
+	const dialogue = document.createElement('dialog');
+	const input = document.createElement('div');
+	input.innerHTML = message;
+	dialogue.appendChild(input);
+	dialogue.addEventListener('click', (event)=>{if(event.target===dialogue){dialogue.close();}});
+	dialogue.addEventListener('close', () => { dialogue.remove(); });
+	document.body.appendChild(dialogue);
+	dialogue.showModal();
+}
 
 async function ExecAndWait(selector, callback){
 	let target = document.querySelector(selector);
@@ -299,3 +327,24 @@ async function ExecAndWait(selector, callback){
 		console.log(`selector {selector} not found`);
 	}
 }
+
+/*
+let labels = document.querySelectorAll('.nspd-label');
+for(el of labels){
+	console.log(el.textContent.trim());
+	if(el.textContent.trim() == 'Наличие массовой ошибки'){
+		let fieldset = el.closest('.grid').querySelector('fieldset');
+		console.log(fieldset);
+		let radioYes = [...fieldset.querySelectorAll('label')]
+			.find(l => l.querySelector('span.label')?.textContent.trim() == 'Да')?.querySelector('input');
+		console.log(radioYes);
+	}
+}
+
+let data = {};
+let labels = document.querySelectorAll('fieldset label');
+for(el of labels){
+	if(!el.querySelector('span').textContent) continue;
+	data[el.querySelector('span').textContent.trim()] = el.querySelector('div').textContent.trim();
+}
+*/

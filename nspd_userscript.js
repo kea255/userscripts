@@ -190,12 +190,12 @@ GM_registerMenuCommand("02. Отправка Акта, прикрепить фа
   for(el of labels)
     if(el.textContent.trim() == 'Дата акта') await changeInput(el.querySelector('input'), m[2]);
 
-  await sleep(2000);
+  await sleep(1000);
 
   document.querySelectorAll('.App main ul>li button').forEach(async btn => {
     if(btn.textContent.trim()=='Расчет КС вне ПРН'){
 		btn.click();
-		await sleep(1000);
+		await sleep(2000);
 		document.querySelectorAll('.App main ul>li button').forEach(async btn => {
 			if(btn.textContent.trim()=='Файлы') btn.click();
 		});
@@ -219,7 +219,7 @@ GM_registerMenuCommand("02. Публикация на сайте", async functio
   document.querySelectorAll('.App main ul>li button').forEach(btn => {
       if(btn.textContent.trim().indexOf('Передать на публикацию')>=0) btn.click();
   });
-  await sleep(1500);
+  await sleep(2000);
   document.querySelectorAll('.App main ul>li button').forEach(btn => {
       if(btn.textContent.trim().indexOf('Передать результаты')>=0) btn.click();
   });
