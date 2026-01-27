@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.3
+// @version     1.5
 // @updateURL	https://00.gko73.ru/userscripts/nspd_userscript.js
 // @downloadURL	https://00.gko73.ru/userscripts/nspd_userscript.js
 // @author      -
@@ -37,7 +37,7 @@ if(window.location.href.indexOf('registryId=42472')>=0){
 		//подсветить новые перечни
 		document.querySelectorAll('.App table>tbody>tr').forEach(row => {
 		  const cell = row.querySelector('td:nth-child(10)');
-		  if (cell && cell.textContent.trim() == 'Перечень ОН разобран') {
+		  if (cell && cell.textContent.trim() == 'Расчет кадастровой стоимости') {
 			row.style.background='#fffed7';
 		  }
 		  if (cell && cell.textContent.trim() == 'Перечень ОН утвержден') {
@@ -109,7 +109,7 @@ if(window.location.href.endsWith('/profile')){
 GM_registerMenuCommand("01. Открыть новые перечни", function(event) {
   fetch("https://nspd.gov.ru/api/registers-manager/v2/search/42472?page=0&count=10", {
     "headers": {"content-type": "application/json"},
-    "body": '{"textAttribValsList":[{"attribsID":47028,"values":["Перечень ОН разобран"]}]}',
+    "body": '{"textAttribValsList":[{"attribsID":47028,"values":["Расчет кадастровой стоимости"]}]}',
     "method": "POST"
   }).then(response => response.json()).then(res => {
     for(r of res.body){
@@ -119,17 +119,10 @@ GM_registerMenuCommand("01. Открыть новые перечни", function(
 });
 
 GM_registerMenuCommand("01. Скачать перечень", async function(event) {
-  var tech_process = window.location.href.match(/tech-process\/(\d{10})\//)[1];
+  var tech_process = window.location.href.match(/tech-process\/(\d*?)\//)[1];
   if(!tech_process){
     GM_notification('Невозможно получить номер тех процесса', 'Ошибка');
     return;
-  }
-  let labels = document.querySelectorAll('fieldset label');
-  for(el of labels){
-    if(el.textContent.trim() == 'Фамилия') await changeInput(el.querySelector('input'), 'Кузнецов');
-    if(el.textContent.trim() == 'Имя') await changeInput(el.querySelector('input'), 'Евгений');
-    if(el.textContent.trim() == 'Отчество') await changeInput(el.querySelector('input'), 'Александрович');
-    if(el.textContent.trim() == 'Должность') await changeInput(el.querySelector('input'), 'Начальник отдела ИТ');
   }
 
   let num_proc='';
@@ -142,15 +135,15 @@ GM_registerMenuCommand("01. Скачать перечень", async function(eve
   }
 
   if(num_proc){
-    fetch("https://nspd.gov.ru/api/tech-process/v2/registers/42472/objdocs/"+tech_process+"/stages/687/folders").then(response => response.json()).then(res => {
-      for(file of res[0].files){
+    fetch("https://nspd.gov.ru/api/tech-process/v2/registers/42472/objdocs/"+tech_process+"/stages/527/folders").then(response => response.json()).then(res => {
+      for(file of res[1].files){
         if(file.fileName.endsWith(".zip")){
           GM_download('https://nspd.gov.ru/api/registers-manager/v2/file/'+file.externalKey, 'Перечень_'+num_proc+'_'+formattedDate+'.zip');
         }
       }
 
       document.querySelectorAll('.App main ul>li button').forEach(btn => {
-        if(btn.textContent.trim()=='Завершить этап') btn.click();
+        if(btn.textContent.trim()=='Расчет КС вне ПРН') btn.click();
       });
     });
   }else{
@@ -160,22 +153,6 @@ GM_registerMenuCommand("01. Скачать перечень", async function(eve
 
 //――――――――――――――――――――――――――
 
-/*GM_registerMenuCommand("02. Поиск процедуры в таблице", async function(event) {
-  let proc_num = prompt('Введите номер процедуры', '');
-  if(proc_num){
-    proc_num = proc_num.replace(/\s/g,'').trim();
-    fetch("https://nspd.gov.ru/api/registers-manager/v2/search/42472?page=0&count=10", {
-      "headers": {"content-type": "application/json"},
-      "body": '{"textQuery":{"value":"'+proc_num+'"}}',
-      "method": "POST"
-    }).then(response => response.json()).then(res => {
-      window.location.href = 'https://nspd.gov.ru/tech-process/'+res.body[0].objdocId+'/registry/42472';
-    });
-  }
-});*/
-
-//GM_registerMenuCommand("──────────", function() {});
-
 GM_registerMenuCommand("02. Отправка Акта, прикрепить файлы", async function(event) {
   let pres = prompt('Введите номер Акта и дату', ''); let m = null;
   if(pres){
@@ -184,22 +161,32 @@ GM_registerMenuCommand("02. Отправка Акта, прикрепить фа
   }else{
 	return;
   }
+  
   let labels = document.querySelectorAll('fieldset label');
-  for(el of labels)
-    if(el.textContent.trim() == 'Номер акта') await changeInput(el.querySelector('input'), m[1]);
-  for(el of labels)
-    if(el.textContent.trim() == 'Дата акта') await changeInput(el.querySelector('input'), m[2]);
+  for(el of labels){
+    if(el.textContent.trim() == 'Нет') el.querySelector('input').click();
+  }
+  await sleep(1000);
 
+  labels = document.querySelectorAll('fieldset legend');
+  for(el of labels){
+    if(el.textContent.trim()=='Акты об определении кадастровой стоимости'){
+      [...el.closest('fieldset').querySelectorAll('button')].find(b => b.innerText.trim()=='Редактировать')?.click();
+      await sleep(200);
+      [...el.closest('fieldset').querySelectorAll('button')].find(b => b.innerText.trim()=='Добавить строку')?.click();
+      await sleep(200);
+      await changeTextarea(el.closest('fieldset').querySelector('td:first-child textarea'), m[2]);
+      await changeTextarea(el.closest('fieldset').querySelector('td:nth-child(2) textarea'), m[1]);
+      await sleep(200);
+      [...el.closest('fieldset').querySelectorAll('button')].find(b => b.innerText.trim()=='Сохранить изменения')?.click();
+    }
+  }
   await sleep(1000);
 
   document.querySelectorAll('.App main ul>li button').forEach(async btn => {
-    if(btn.textContent.trim()=='Расчет КС вне ПРН'){
-		btn.click();
-		await sleep(2000);
-		document.querySelectorAll('.App main ul>li button').forEach(async btn => {
-			if(btn.textContent.trim()=='Файлы') btn.click();
-		});
-	}
+	document.querySelectorAll('.App main ul>li button').forEach(async btn => {
+		if(btn.textContent.trim()=='Файлы') btn.click();
+	});
   });
 });
 
@@ -207,15 +194,16 @@ GM_registerMenuCommand("02. Публикация на сайте", async functio
   let tomorrow = new Date();
   //tomorrow.setDate(tomorrow.getDate() + 1); // Добавляем один день к текущей дате
   let upload_dat = tomorrow.toLocaleDateString('ru-RU').replace(/\//g, '.');
-  document.querySelectorAll('.App main ul>li button').forEach(async btn => {
-	if(btn.textContent.trim()=='Сведения') btn.click();
-  });
-  await sleep(1000);
+
   let labels = document.querySelectorAll('fieldset label');
   for(el of labels){
-    if(el.textContent.trim().indexOf('Ссылка на раздел сайта ГБУ')>=0) await changeInput(el.querySelector('input'), 'https://gko73.ru/akty-ob-opredelenii-ks/');
-    if(el.textContent.trim() == 'Дата размещения актов на сайте ГБУ') await changeInput(el.querySelector('input'), upload_dat);
+    if(el.textContent.trim().indexOf('Ссылка на раздел сайта ГБУ')>=0){
+		await changeInput(el.querySelector('input'), 'https://gko73.ru/akty-ob-opredelenii-ks/');
+		await sleep(1000);
+	}
+    if(el.textContent.trim().indexOf('Дата')>=0) await changeInput(el.querySelector('input'), upload_dat);
   }
+  await sleep(1000);
   document.querySelectorAll('.App main ul>li button').forEach(btn => {
       if(btn.textContent.trim().indexOf('Передать на публикацию')>=0) btn.click();
   });
@@ -249,6 +237,19 @@ async function changeSelectbox(inputElement, val){
 	await sleep(100);
 	return sleep(500);
   }catch(e){return sleep(100);}
+}
+
+async function changeTextarea(ta, val){
+	try{
+		ta.dispatchEvent(new Event('focusin', { bubbles: true }));
+		ta.value = val;
+		const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+		nativeInputValueSetter.call(ta, val);
+		ta.dispatchEvent(new Event('input',  { bubbles: true }));
+		ta.dispatchEvent(new Event('change', { bubbles: true }));
+		ta.dispatchEvent(new Event('focusout', { bubbles: true }));
+		await sleep(100);
+	}catch(e){console.error(e); return sleep(100);}
 }
 
 function sleep(ms){return new Promise(resolve => setTimeout(resolve, ms));}

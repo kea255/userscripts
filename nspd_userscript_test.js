@@ -243,13 +243,15 @@ fetch("https://stage.nspd.rosreestr.gov.ru/api/registers-manager/v2/registers/42
 
 //----
 async function changeInput(inputElement, val){
-	inputElement.dispatchEvent(new Event('focusin', { bubbles: true }));
-	const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
-	nativeInputValueSetter.call(inputElement, val);
-	inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-	await sleep(100);
-	inputElement.dispatchEvent(new Event('focusout', { bubbles: true }));
-	return sleep(500);
+  try{
+    inputElement.dispatchEvent(new Event('focusin', { bubbles: true }));
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+    nativeInputValueSetter.call(inputElement, val);
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(100);
+    inputElement.dispatchEvent(new Event('focusout', { bubbles: true }));
+    return sleep(500);
+  }catch(e){return sleep(100);}
 }
 
 async function changeSelectbox(inputElement, val){
@@ -262,6 +264,19 @@ async function changeSelectbox(inputElement, val){
 	await sleep(100);
 	return sleep(500);
   }catch(e){return sleep(100);}
+}
+
+async function changeTextarea(ta, val){
+	try{
+		ta.dispatchEvent(new Event('focusin', { bubbles: true }));
+		ta.value = val;
+		const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+		nativeInputValueSetter.call(ta, val);
+		ta.dispatchEvent(new Event('input',  { bubbles: true }));
+		ta.dispatchEvent(new Event('change', { bubbles: true }));
+		ta.dispatchEvent(new Event('focusout', { bubbles: true }));
+		await sleep(100);
+	}catch(e){console.error(e); return sleep(100);}
 }
 
 async function customPrompt(message) {

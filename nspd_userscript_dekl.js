@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.0
+// @version     1.1
 // @updateURL	https://00.gko73.ru/userscripts/nspd_userscript_dekl.js
 // @downloadURL	https://00.gko73.ru/userscripts/nspd_userscript_dekl.js
 // @author      -
@@ -72,12 +72,13 @@ GM_registerMenuCommand("02. Реквизиты заявления для 1С", a
 		if(!el.querySelector('span').textContent) continue;
 		data[el.querySelector('span').textContent.trim()] = el.querySelector('div').textContent.trim();
 	}
-	
+
 	let res = '';
 	for([k, v] of Object.entries(sootv)){
 		if(!v in data) continue;
 		res += `${k}: ${data[v]}<br>\n`;
 	}
+	res += 'Номер процедуры НСПД: '+window.location.href.match(/tech-process\/(\d*?)\//)[1];
 	customAlert(res);
 });
 
