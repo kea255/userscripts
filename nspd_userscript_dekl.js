@@ -8,7 +8,7 @@
 // @grant GM_addElement
 // @grant GM_addStyle
 // @grant GM_openInTab
-// @version     1.1
+// @version     1.2
 // @updateURL	https://00.gko73.ru/userscripts/nspd_userscript_dekl.js
 // @downloadURL	https://00.gko73.ru/userscripts/nspd_userscript_dekl.js
 // @author      -
@@ -20,7 +20,13 @@ const formattedDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 //――――――――――――――――――――――――――
 
 async function fetchStCnt(rid){
-	fetch(`https://nspd.gov.ru/api/registers-manager/v2/search/${rid}?page=0&count=10`, {method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({textAttribValsList: [{ attribsID: 50373, values: ["Новый запрос"] }]})})
+	const fltr = {
+		42702: [{attribsID: 49944, values: ['Новая декларация']}],
+		42732: [{attribsID: 50373, values: ['Новый запрос']}],
+		42722: [{attribsID: 50244, values: ['Новое заявление']}],
+		42742: [{attribsID: 50489, values: ['Новое заявление']}],
+	}
+	fetch(`https://nspd.gov.ru/api/registers-manager/v2/search/${rid}?page=0&count=10`, {method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({textAttribValsList: fltr[rid]})})
 	.then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
 	.then(data => {
 		document.querySelector(`#st${rid}`).textContent = data?.body?.length ?? "-";
@@ -37,7 +43,7 @@ GM_registerMenuCommand("01. Проверить новые заявления", a
 	const tasks = [
 		{id: 42702, name: "Декларации о характеристиках"},
 		{id: 42732, name: "Ст. 20. Предоставление разъяснений"},
-		{id: 42722, name: "Ст. 21. Рассмотрение заявлений об исправлении"},
+		{id: 42722, name: "Ст. 21. Заявление об исправлении ошибок"},
 		{id: 42742, name: "Ст. 22.1. Установление кадастровой стоимости"}
 	];
 	
@@ -75,7 +81,7 @@ GM_registerMenuCommand("02. Реквизиты заявления для 1С", a
 
 	let res = '';
 	for([k, v] of Object.entries(sootv)){
-		if(!v in data) continue;
+		if(!(v in data)) continue;
 		res += `${k}: ${data[v]}<br>\n`;
 	}
 	res += 'Номер процедуры НСПД: '+window.location.href.match(/tech-process\/(\d*?)\//)[1];

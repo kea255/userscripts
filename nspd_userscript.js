@@ -181,12 +181,10 @@ GM_registerMenuCommand("02. Отправка Акта, прикрепить фа
       [...el.closest('fieldset').querySelectorAll('button')].find(b => b.innerText.trim()=='Сохранить изменения')?.click();
     }
   }
-  await sleep(1000);
+  await sleep(1500);
 
   document.querySelectorAll('.App main ul>li button').forEach(async btn => {
-	document.querySelectorAll('.App main ul>li button').forEach(async btn => {
-		if(btn.textContent.trim()=='Файлы') btn.click();
-	});
+	  if(btn.textContent.trim()=='Файлы') btn.click();
   });
 });
 
